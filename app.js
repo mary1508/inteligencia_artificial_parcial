@@ -164,6 +164,12 @@ async function startGA() {
       pushToCharts(d.generation, d.best_fitness, d.avg_fitness);
       appendLog(`<span class="gen">Gen ${d.generation}</span> fit=<span class="fit">${d.best_fitness}</span> avg=${d.avg_fitness} std=${d.std_fitness || '—'} dist=${d.best_max_x}px jumps=${d.best_jumps || 0} cleared=${d.best_cleared || 0}`);
 
+      // If server provided a population summary, render it (downsampled)
+      if (msg.pop && window.playPopulation) {
+        // Play population for this generation (non-blocking)
+        try { playPopulation(msg.pop, d.generation); } catch(e){ console.warn('playPopulation failed', e); }
+      }
+
       // Every 10 gens, fetch and replay best
       if (d.generation % 30 === 0) {
         setTimeout(fetchAndReplay, 500);

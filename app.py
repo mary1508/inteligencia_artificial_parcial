@@ -56,6 +56,10 @@ def run_ga():
         "generations":   int(data.get("generations",   1000)),
         "pop_size":      int(data.get("pop_size",       60)),
         "elite_size":    float(data.get("elite_size",  0.15)),
+        # Tier 1 improvements
+        "init_strategy": data.get("init_strategy", "hybrid"),  # 'hybrid', 'biased', 'random'
+        "adaptive_mutation": data.get("adaptive_mutation", True),  # True/False
+        "crossover_points": int(data.get("crossover_points", 3)),  # 2, 3, 5, etc.
     }
 
     _ga_running = True
@@ -64,8 +68,9 @@ def run_ga():
     def run():
         global _ga_running, _best_chromosome, _best_result, _history
 
-        def cb(entry, best_chrom):
-            _run_queue.put({"type": "progress", "data": entry, "chrom": best_chrom})
+        def cb(entry, best_chrom, pop=None):
+            _run_queue.put({"type": "progress", "data": entry, "chrom": best_chrom, "pop": pop})
+            
 
         chrom, fit, hist, result = genetic_algorithm(progress_cb=cb, **params)
         _best_chromosome = chrom

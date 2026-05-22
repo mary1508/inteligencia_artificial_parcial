@@ -146,7 +146,7 @@ function drawObstacles(camX) {
 
 // ── Avatar ──────────────────────────────────────────────────────────────────
 let _legPhase = 0;
-function drawAvatar(wx, wy, action, hit, t) {
+function drawAvatar(wx, wy, action, hit, t, colorOverride) {
   const cx  = s(wx - cameraX + AV_W / 2);
   const bot = s(wy);
   const sc  = scaleFactor;
@@ -154,12 +154,15 @@ function drawAvatar(wx, wy, action, hit, t) {
   const isWalk  = action === 'move_right' || action === 'move_left';
   const isJump  = action === 'jump' || action === 'jump_right' || action === 'jump_left';
   const isLeft  = action === 'move_left' || action === 'jump_left';
-  const color   = hit ? '#ff4757' : '#00e5ff';
+  const defaultColor = hit ? '#ff4757' : '#00e5ff';
+  const color   = colorOverride || defaultColor;
   const glow    = hit ? '#ff4757' : '#00e5ff';
 
   if (isWalk) _legPhase = (_legPhase + 0.35) % (Math.PI * 2);
 
   ctx.save();
+  // allow per-avatar color alpha
+  if (colorOverride) ctx.globalAlpha = 0.9;
   ctx.shadowColor = glow;
   ctx.shadowBlur  = hit ? 18 : 10;
 
@@ -245,6 +248,52 @@ function drawAvatar(wx, wy, action, hit, t) {
   }
 
   ctx.restore();
+  if (colorOverride) ctx.globalAlpha = 1.0;
+}
+
+// ── Play population trajectories in parallel ───────────────────────────────
+let popAnimHandle = null;
+function playPopulation(popArray, generation) {
+  if (popAnimHandle) clearTimeout(popAnimHandle);
+  if (!Array.isArray(popArray) || popArray.length === 0) return;
+
+  const maxLen = Math.max(...popArray.map(p => p.trajectory.length));
+  let idx = 0;
+
+  // assign colors per individual
+  const colors = popArray.map((p, i) => `hsl(${(i*137.5) % 360} 80% 55%)`);
+
+  function step() {
+    if (idx >= maxLen) {
+      // stop after one playback
+      return;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground(cameraX);
+    drawFloor(cameraX);
+    drawObstacles(cameraX);
+
+    // draw each individual's frame if available
+    for (let i = 0; i < popArray.length; i++) {
+      const traj = popArray[i].trajectory;
+      if (!traj || traj.length === 0) continue;
+      const f = traj[Math.min(idx, traj.length-1)];
+      // draw with color and lower alpha
+      drawAvatar(f.x, f.y, f.action, f.hit, idx, colors[i]);
+    }
+
+    // progress bar: show average frame progress
+    const avgProgress = (idx / maxLen) * 100;
+    document.getElementById('progressBar').style.width = avgProgress + '%';
+
+    idx++;
+    popAnimHandle = setTimeout(step, frameDelayMs);
+  }
+
+  // set generation label
+  document.getElementById('genLabel').textContent = generation !== undefined ? generation : '—';
+  step();
 }
 
 // ── Render loop ──────────────────────────────────────────────────────────────
