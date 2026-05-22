@@ -220,6 +220,11 @@
           <input type="range" id="elite_size" min="0.05" max="0.4" value="0.15" step="0.05"
                  oninput="document.getElementById('elVal').textContent=Math.round(this.value*100)+'%'">
         </div>
+        <div class="param-row">
+          <label>Velocidad reproducción <span id="playbackVal">60ms</span></label>
+          <input type="range" id="playback_delay" min="8" max="200" value="60" step="4"
+                 oninput="document.getElementById('playbackVal').textContent=this.value+'ms'; if(window.setFrameDelay) setFrameDelay(this.value)">
+        </div>
       </div>
     </div>
 
@@ -236,6 +241,17 @@
         <div class="stat-card">
           <div class="stat-label">MEJOR FITNESS</div>
           <div class="stat-value green" id="mFit">—</div>
+        </div>
+        <div style="height:8px"></div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">SALTOS</div>
+            <div class="stat-value" id="mJumps">—</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">OBSTÁCULOS SALTADOS</div>
+            <div class="stat-value" id="mClear">—</div>
+          </div>
         </div>
         <div class="stat-card">
           <div class="stat-label">DISTANCIA MAX</div>

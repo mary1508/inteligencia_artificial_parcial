@@ -15,6 +15,7 @@ let frameIdx    = 0;
 let animHandle  = null;
 let stars       = [];
 let cameraX     = 0;
+let frameDelayMs = 60; // milliseconds per simulation step (lower -> faster)
 
 // ── Init ────────────────────────────────────────────────────────────────────
 function initWorld() {
@@ -261,6 +262,8 @@ function drawStaticWorld(obs) {
 let _totalGens = 150;
 function setTotalGenerations(n) { _totalGens = n; }
 
+function setFrameDelay(ms) { frameDelayMs = Math.max(8, Number(ms) || 60); }
+
 function playTrajectory(traj, generation, totalGens) {
   if (animHandle) cancelAnimationFrame(animHandle);
   trajectory = traj;
@@ -270,11 +273,11 @@ function playTrajectory(traj, generation, totalGens) {
   document.getElementById('genLabel').textContent = generation !== undefined ? generation : '—';
 
   function step() {
-    if (frameIdx >= trajectory.length) {
-      // Loop: short pause then restart
-      setTimeout(() => { frameIdx = 0; animHandle = requestAnimationFrame(step); }, 800);
-      return;
-    }
+      if (frameIdx >= trajectory.length) {
+        // Loop: short pause then restart
+        animHandle = setTimeout(() => { frameIdx = 0; animHandle = setTimeout(step, frameDelayMs); }, 800);
+        return;
+      }
     const frame = trajectory[frameIdx];
 
     // Camera: follow avatar with look-ahead
@@ -292,9 +295,10 @@ function playTrajectory(traj, generation, totalGens) {
       (frameIdx / trajectory.length * 100) + '%';
 
     frameIdx++;
-    animHandle = requestAnimationFrame(step);
+    animHandle = setTimeout(step, frameDelayMs);
   }
-  animHandle = requestAnimationFrame(step);
+  if (animHandle) clearTimeout(animHandle);
+  animHandle = setTimeout(step, frameDelayMs);
 }
 
 window.addEventListener('DOMContentLoaded', initWorld);

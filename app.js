@@ -157,10 +157,12 @@ async function startGA() {
       document.getElementById('mFit').textContent  = d.best_fitness.toFixed(2);
       document.getElementById('mDist').textContent = d.best_max_x + 'px';
       document.getElementById('mColl').textContent = d.best_collisions;
+      if (typeof d.best_jumps !== 'undefined') document.getElementById('mJumps').textContent = d.best_jumps;
+      if (typeof d.best_cleared !== 'undefined') document.getElementById('mClear').textContent = d.best_cleared;
       document.getElementById('genLabel').textContent = d.generation;
 
       pushToCharts(d.generation, d.best_fitness, d.avg_fitness);
-      appendLog(`<span class="gen">Gen ${d.generation}</span> fit=<span class="fit">${d.best_fitness}</span> avg=${d.avg_fitness} dist=${d.best_max_x}px`);
+      appendLog(`<span class="gen">Gen ${d.generation}</span> fit=<span class="fit">${d.best_fitness}</span> avg=${d.avg_fitness} std=${d.std_fitness || '—'} dist=${d.best_max_x}px jumps=${d.best_jumps || 0} cleared=${d.best_cleared || 0}`);
 
       // Every 10 gens, fetch and replay best
       if (d.generation % 30 === 0) {

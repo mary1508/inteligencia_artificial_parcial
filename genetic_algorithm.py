@@ -113,22 +113,57 @@ def simulate(chromosome: list[int]) -> dict:
             "action": ACTIONS[action], "hit": hit
         })
 
-    # ── Fitness function ──────────────────────────────────────────────────────
-    # Reward: distance traveled to the right
-    # Penalty: collisions with obstacles
-    # Bonus: jumping over obstacles (clearing them)
-    distance_score  = (max_x - AVATAR_X_START) / WORLD_WIDTH * 100
-    collision_penalty = collisions * 5
-    efficiency_bonus  = (steps_survived / CHROMOSOME_LEN) * 10
+    # ── Post-simulation analysis: clearances, motion stats ───────────────────
+    cleared = 0
+    for obs in OBSTACLES:
+        passed = any(f['x'] > (obs['x'] + obs['w']) for f in trajectory)
+        hit_during = any((obs['x'] < f['x'] < obs['x'] + obs['w']) and f['hit'] for f in trajectory)
+        if passed and not hit_during:
+            cleared += 1
 
-    fitness = max(0, distance_score - collision_penalty + efficiency_bonus)
+    left_moves = sum(1 for a in chromosome if a == 2)
+    # direction changes between left/right movement
+    dir_changes = 0
+    prev = None
+    for a in chromosome:
+        if a in (1, 2):
+            if prev is None:
+                prev = a
+            else:
+                if a != prev:
+                    dir_changes += 1
+                    prev = a
+
+    # ── Fitness function (weighted, normalized) ──────────────────────────────
+    distance_score      = (max_x - AVATAR_X_START) / WORLD_WIDTH * 100
+    collision_penalty   = collisions * 12.0
+    clearance_bonus     = cleared * 8.0
+    efficiency_bonus    = (steps_survived / CHROMOSOME_LEN) * 10.0
+    left_penalty        = left_moves * 0.25
+    wasted_jump_penalty = max(0, (jump_count - cleared)) * 0.6
+    smoothness_penalty  = dir_changes * 0.35
+
+    fitness = (
+        distance_score
+        - collision_penalty
+        + clearance_bonus
+        + efficiency_bonus
+        - left_penalty
+        - wasted_jump_penalty
+        - smoothness_penalty
+    )
+
+    fitness = max(0.0, round(fitness, 4))
 
     return {
         "trajectory": trajectory,
-        "fitness": round(fitness, 4),
+        "fitness": fitness,
         "max_x": round(max_x, 1),
         "collisions": collisions,
         "jumps": jump_count,
+        "cleared": cleared,
+        "left_moves": left_moves,
+        "dir_changes": dir_changes,
     }
 
 
@@ -229,18 +264,25 @@ def genetic_algorithm(
         best_idx     = int(np.argmax(all_fitness))
         best_fitness = all_fitness[best_idx]
         avg_fitness  = float(np.mean(all_fitness))
+        std_fitness  = float(np.std(all_fitness))
+        med_fitness  = float(np.median(all_fitness))
 
-        if generation % 10 == 0 or generation == generations - 1:
-            entry = {
-                "generation": generation,
-                "best_fitness": round(best_fitness, 3),
-                "avg_fitness":  round(avg_fitness, 3),
-                "best_collisions": all_results[best_idx]["collisions"],
-                "best_max_x": all_results[best_idx]["max_x"],
-            }
-            history.append(entry)
-            if progress_cb:
-                progress_cb(entry, population[best_idx])
+        best_result = all_results[best_idx]
+
+        entry = {
+            "generation": generation,
+            "best_fitness": round(best_fitness, 3),
+            "avg_fitness":  round(avg_fitness, 3),
+            "std_fitness":  round(std_fitness, 3),
+            "med_fitness":  round(med_fitness, 3),
+            "best_collisions": best_result.get("collisions", 0),
+            "best_max_x": best_result.get("max_x", 0),
+            "best_jumps": best_result.get("jumps", 0),
+            "best_cleared": best_result.get("cleared", 0),
+        }
+        history.append(entry)
+        if progress_cb:
+            progress_cb(entry, population[best_idx])
 
     best_idx  = int(np.argmax(all_fitness))
     return population[best_idx], all_fitness[best_idx], history, all_results[best_idx]
