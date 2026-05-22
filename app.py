@@ -53,7 +53,7 @@ def run_ga():
     data = request.json or {}
     params = {
         "mutation_rate": float(data.get("mutation_rate", 0.15)),
-        "generations":   int(data.get("generations",   150)),
+        "generations":   int(data.get("generations",   1000)),
         "pop_size":      int(data.get("pop_size",       60)),
         "elite_size":    float(data.get("elite_size",  0.15)),
     }

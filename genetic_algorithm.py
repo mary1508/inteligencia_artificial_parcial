@@ -36,11 +36,13 @@ def generate_obstacles(seed: int = 42):
     rng = random.Random(seed)
     obstacles = []
     x = 200
+    # Create obstacles with larger widths and more regular spacing
     while x < WORLD_WIDTH - 100:
-        w = rng.randint(30, 70)
-        h = rng.randint(20, 55)
+        w = rng.randint(40, 120)   # wider obstacles for continuity
+        h = rng.randint(20, 60)
         obstacles.append({"x": x, "y": FLOOR_Y - h, "w": w, "h": h})
-        x += rng.randint(90, 180)
+        # increase spacing but with moderate variability
+        x += rng.randint(120, 260)
     return obstacles
 
 
@@ -220,7 +222,7 @@ def mutate(chromosome: list[int], rate: float = 0.1) -> list[int]:
 # ── Main GA loop ──────────────────────────────────────────────────────────────
 def genetic_algorithm(
     mutation_rate: float = 0.15,
-    generations:   int   = 200,
+    generations:   int   = 1000,
     pop_size:      int   = 80,
     elite_size:    float = 0.15,
     progress_cb=None,
